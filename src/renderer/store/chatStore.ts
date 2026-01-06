@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { getApi } from '@/lib/api'
 
 export interface Message {
   role: 'user' | 'assistant'
@@ -42,7 +43,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   isLoaded: false,
 
   loadChats: async () => {
-    const chats = await window.electronAPI?.db?.getAllChats() ?? []
+    const api = getApi()
+    const chats = await api.db.getAllChats()
     set({ 
       chats, 
       isLoaded: true,
@@ -60,7 +62,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       createdAt: Date.now(),
     }
     
-    window.electronAPI?.db?.createChat(id, title)
+    getApi().db.createChat(id, title)
     
     set(state => ({
       chats: [newChat, ...state.chats],
@@ -70,7 +72,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   },
 
   deleteChat: (id) => {
-    window.electronAPI?.db?.deleteChat(id)
+    getApi().db.deleteChat(id)
     
     set(state => {
       const newChats = state.chats.filter(c => c.id !== id)
@@ -92,7 +94,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   },
 
   addMessage: (chatId, message) => {
-    window.electronAPI?.db?.addMessage(chatId, message.role, message.content)
+    getApi().db.addMessage(chatId, message.role, message.content)
     
     set(state => ({
       chats: state.chats.map(chat => {
@@ -101,7 +103,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         const newTitle = chat.title === 'New Chat' ? generateTitle(newMessages) : chat.title
         
         if (newTitle !== chat.title) {
-          window.electronAPI?.db?.updateChatTitle(chatId, newTitle)
+          getApi().db.updateChatTitle(chatId, newTitle)
         }
         
         return {
@@ -114,7 +116,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   },
 
   updateLastMessage: (chatId, content) => {
-    window.electronAPI?.db?.updateLastMessage(chatId, content)
+    getApi().db.updateLastMessage(chatId, content)
     
     set(state => ({
       chats: state.chats.map(chat => {
@@ -130,7 +132,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   },
 
   updateChatTitle: (chatId, title) => {
-    window.electronAPI?.db?.updateChatTitle(chatId, title)
+    getApi().db.updateChatTitle(chatId, title)
     
     set(state => ({
       chats: state.chats.map(chat =>

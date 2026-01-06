@@ -1,7 +1,5 @@
 import type { LanguageModel, ModelMessage } from 'ai'
-
-export type { LLMProviderType } from '../../../shared/types.js'
-import type { LLMProviderType } from '../../../shared/types.js'
+import type { LLMProviderType } from '../../lib/types.js'
 
 export interface LLMConfig {
   provider: LLMProviderType

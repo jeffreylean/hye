@@ -12,6 +12,10 @@ export class CustomProvider extends BaseProvider {
     defaultModels: ['gpt-4o', 'gpt-4o-mini', 'gpt-4', 'gpt-3.5-turbo'],
   }
 
+  constructor(config: LLMConfig) {
+    super(config)
+  }
+
   createModel(modelName?: string): LanguageModel {
     const openai = createOpenAI({
       apiKey: this.apiKey,

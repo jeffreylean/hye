@@ -6,6 +6,7 @@ import {
 } from '@assistant-ui/react'
 import { useConfigStore } from '@/store/configStore'
 import { useChatStore, type Message } from '@/store/chatStore'
+import { getApi } from '@/lib/api'
 
 export function useAssistantRuntime() {
   const { chats, currentChatId, createChat, addMessage, updateLastMessage } = useChatStore()
@@ -53,19 +54,20 @@ export function useAssistantRuntime() {
     chatStore.addMessage(chatId, { role: 'assistant', content: '' })
 
     let streamContent = ''
-    const removeListener = window.electronAPI?.llm?.onStreamChunk?.((chunk: string) => {
-      streamContent += chunk
-      useChatStore.getState().updateLastMessage(chatId!, streamContent)
-    })
+    const api = getApi()
 
     try {
-      const result = await window.electronAPI?.llm?.stream?.(
+      const result = await api.llm.stream(
         [{ role: 'user', content: textContent.text }],
         {
           provider: currentProvider.type,
           apiKey: currentProvider.apiKey,
           baseUrl: currentProvider.baseUrl,
           model: currentProvider.model,
+        },
+        (chunk: string) => {
+          streamContent += chunk
+          useChatStore.getState().updateLastMessage(chatId!, streamContent)
         }
       )
 
@@ -80,8 +82,6 @@ export function useAssistantRuntime() {
         chatId!, 
         `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       )
-    } finally {
-      removeListener?.()
     }
   }, [])
 

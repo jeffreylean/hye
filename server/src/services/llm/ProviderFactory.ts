@@ -1,5 +1,5 @@
-import { LLMError } from '../../lib/effect.js'
-import type { LLMConfig, LLMProvider, LLMProviderType, ProviderConstructor, ProviderMetadata } from './types.js'
+import type { LLMConfig, LLMProvider, ProviderConstructor, ProviderMetadata } from './types.js'
+import type { LLMProviderType } from '../../lib/types.js'
 import { CustomProvider } from './CustomProvider.js'
 import { AnthropicProvider } from './AnthropicProvider.js'
 
@@ -37,7 +37,7 @@ export class ProviderFactory {
     const ProviderClass = registry.get(config.provider)
 
     if (!ProviderClass) {
-      throw new LLMError(`Unsupported provider: ${config.provider}`)
+      throw new Error(`Unsupported provider: ${config.provider}`)
     }
 
     return new ProviderClass(config)

@@ -1,10 +1,10 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useConfigStore } from '@/store/configStore'
 import { useChatStore } from '@/store/chatStore'
 import { Send, Bot, User, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useState } from 'react'
+import { getApi } from '@/lib/api'
 
 export function Chat() {
   const [input, setInput] = useState('')
@@ -59,27 +59,24 @@ export function Chat() {
       }
 
       let streamContent = ''
-      const removeListener = window.electronAPI?.llm?.onStreamChunk?.((chunk: string) => {
-        streamContent += chunk
-        updateLastMessage(chatId!, streamContent)
-      })
+      const api = getApi()
 
-      try {
-        const result = await window.electronAPI?.llm?.stream?.(
-          [{ role: 'user', content: userInput }],
-          {
-            provider: currentProvider.type,
-            apiKey: currentProvider.apiKey,
-            baseUrl: currentProvider.baseUrl,
-            model: currentProvider.model,
-          }
-        )
-
-        if (!result?.success) {
-          updateLastMessage(chatId!, `Error: ${result?.error || 'Unknown error'}`)
+      const result = await api.llm.stream(
+        [{ role: 'user', content: userInput }],
+        {
+          provider: currentProvider.type,
+          apiKey: currentProvider.apiKey,
+          baseUrl: currentProvider.baseUrl,
+          model: currentProvider.model,
+        },
+        (chunk: string) => {
+          streamContent += chunk
+          updateLastMessage(chatId!, streamContent)
         }
-      } finally {
-        removeListener?.()
+      )
+
+      if (!result?.success) {
+        updateLastMessage(chatId!, `Error: ${result?.error || 'Unknown error'}`)
       }
     } catch (error) {
       updateLastMessage(chatId!, `Error: ${error instanceof Error ? error.message : 'Unknown error'}`)

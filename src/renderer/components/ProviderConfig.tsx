@@ -6,6 +6,7 @@ import { getAllProviders, getProviderForm, getProviderMetadata } from './provide
 import type { LLMProviderType } from '../../shared/types'
 import { Bot, Check, Loader2, Sun, Moon, Monitor } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getApi } from '@/lib/api'
 
 export function ProviderConfig() {
   const { currentProvider, setCurrentProvider, theme, setTheme } = useConfigStore()
@@ -47,7 +48,8 @@ export function ProviderConfig() {
     setTestResult(null)
 
     try {
-      const result = await window.electronAPI?.llm?.generate?.(
+      const api = getApi()
+      const result = await api.llm.generate(
         [{ role: 'user', content: 'Hi' }],
         {
           provider: config.type,
