@@ -45,6 +45,42 @@ export interface StreamChunk {
   done: boolean
 }
 
+export interface AgentInitOptions {
+  sessionId: string
+  projectRoot?: string
+  maxSteps?: number
+}
+
+export interface AgentTextEvent {
+  text: string
+}
+
+export interface AgentToolCallEvent {
+  id: string
+  name: string
+  args: unknown
+}
+
+export interface AgentToolResultEvent {
+  id: string
+  name: string
+  result: unknown
+}
+
+export interface AgentCompleteEvent {
+  success: boolean
+  text?: string
+  error?: string
+}
+
+export interface AgentCallbacks {
+  onText?: (event: AgentTextEvent) => void
+  onToolCall?: (event: AgentToolCallEvent) => void
+  onToolResult?: (event: AgentToolResultEvent) => void
+  onComplete?: (event: AgentCompleteEvent) => void
+  onError?: (error: string) => void
+}
+
 export interface ApiClient {
   // Health
   ping(): Promise<string>
@@ -79,5 +115,13 @@ export interface ApiClient {
     deleteChat(id: string): Promise<boolean>
     addMessage(chatId: string, role: 'user' | 'assistant', content: string): Promise<boolean>
     updateLastMessage(chatId: string, content: string): Promise<boolean>
+  }
+
+  // Agent
+  agent: {
+    init(options: AgentInitOptions): Promise<{ success: boolean; sessionId?: string; error?: string }>
+    chat(sessionId: string, message: string, callbacks: AgentCallbacks): Promise<void>
+    clear(sessionId: string): Promise<{ success: boolean }>
+    deleteSession(sessionId: string): Promise<{ success: boolean }>
   }
 }

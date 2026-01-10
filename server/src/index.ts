@@ -3,6 +3,7 @@ import { corsHeaders, textResponse, errorResponse } from "./lib/http.js";
 import { llmRoutes } from "./routes/llm.js";
 import { configRoutes } from "./routes/config.js";
 import { chatRoutes } from "./routes/chats.js";
+import { agentRoutes } from "./routes/agent.js";
 
 const PORT = parseInt(process.env.HYE_PORT || "9876", 10);
 
@@ -16,6 +17,7 @@ const server = Bun.serve({
     ...llmRoutes,
     ...configRoutes,
     ...chatRoutes,
+    ...agentRoutes,
   },
   fetch(req) {
     if (req.method === "OPTIONS") {

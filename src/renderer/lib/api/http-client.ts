@@ -1,7 +1,38 @@
-import type { ApiClient, LLMConfig, LLMMessage, GenerateResponse, ProviderMetadata, Chat, StreamChunk } from './types'
+import type {
+  ApiClient,
+  LLMConfig,
+  LLMMessage,
+  GenerateResponse,
+  ProviderMetadata,
+  Chat,
+  StreamChunk,
+  AgentInitOptions,
+  AgentCallbacks,
+  AgentTextEvent,
+  AgentToolCallEvent,
+  AgentToolResultEvent,
+  AgentCompleteEvent,
+} from './types'
 import type { AppConfig, LLMProviderConfig } from '../../../shared/types'
 
 const DEFAULT_BASE_URL = 'http://localhost:9876'
+
+interface SSEMessage {
+  event: string
+  data: string
+}
+
+function parseSSEChunk(chunk: string): SSEMessage | null {
+  const eventMatch = chunk.match(/^event: (.+)$/m)
+  const dataMatch = chunk.match(/^data: (.+)$/m)
+
+  const event = eventMatch?.[1]
+  const data = dataMatch?.[1]
+
+  if (!event || !data) return null
+
+  return { event, data }
+}
 
 export function createHttpClient(baseUrl: string = DEFAULT_BASE_URL): ApiClient {
   const fetchJSON = async <T>(path: string, options?: RequestInit): Promise<T> => {
@@ -267,6 +298,100 @@ export function createHttpClient(baseUrl: string = DEFAULT_BASE_URL): ApiClient 
           return true
         } catch {
           return false
+        }
+      },
+    },
+
+    agent: {
+      init: async (options: AgentInitOptions): Promise<{ success: boolean; sessionId?: string; error?: string }> => {
+        try {
+          return await fetchJSON('/api/agent/init', {
+            method: 'POST',
+            body: JSON.stringify(options),
+          })
+        } catch (error) {
+          return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+        }
+      },
+
+      chat: async (sessionId: string, message: string, callbacks: AgentCallbacks): Promise<void> => {
+        const response = await fetch(`${baseUrl}/api/agent/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, message }),
+        })
+
+        if (!response.ok) {
+          const error = await response.text()
+          callbacks.onError?.(error)
+          return
+        }
+
+        const reader = response.body?.getReader()
+        if (!reader) {
+          callbacks.onError?.('No response body')
+          return
+        }
+
+        const decoder = new TextDecoder()
+        let buffer = ''
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n\n')
+          buffer = lines.pop() ?? ''
+
+          for (const chunk of lines) {
+            if (!chunk.trim()) continue
+
+            const parsed = parseSSEChunk(chunk)
+            if (!parsed) continue
+
+            const data = JSON.parse(parsed.data)
+
+            switch (parsed.event) {
+              case 'text':
+                callbacks.onText?.(data as AgentTextEvent)
+                break
+              case 'tool:call':
+                callbacks.onToolCall?.(data as AgentToolCallEvent)
+                break
+              case 'tool:result':
+                callbacks.onToolResult?.(data as AgentToolResultEvent)
+                break
+              case 'complete':
+                callbacks.onComplete?.(data as AgentCompleteEvent)
+                break
+              case 'error':
+                callbacks.onError?.((data as { error: string }).error)
+                break
+            }
+          }
+        }
+      },
+
+      clear: async (sessionId: string): Promise<{ success: boolean }> => {
+        try {
+          return await fetchJSON('/api/agent/clear', {
+            method: 'POST',
+            body: JSON.stringify({ sessionId }),
+          })
+        } catch {
+          return { success: false }
+        }
+      },
+
+      deleteSession: async (sessionId: string): Promise<{ success: boolean }> => {
+        try {
+          await fetchJSON(`/api/agent/session/${encodeURIComponent(sessionId)}`, {
+            method: 'DELETE',
+          })
+          return { success: true }
+        } catch {
+          return { success: false }
         }
       },
     },

@@ -1,9 +1,19 @@
 import { create } from 'zustand'
 import { getApi } from '@/lib/api'
 
+export interface ToolCall {
+  id: string
+  name: string
+  args: unknown
+  result?: unknown
+  status: 'running' | 'complete' | 'error'
+}
+
 export interface Message {
   role: 'user' | 'assistant'
   content: string
+  toolCalls?: ToolCall[]
+  reasoning?: string
 }
 
 export interface Chat {
@@ -11,6 +21,7 @@ export interface Chat {
   title: string
   messages: Message[]
   createdAt: number
+  agentSessionId?: string
 }
 
 interface ChatState {
@@ -25,6 +36,11 @@ interface ChatState {
   addMessage: (chatId: string, message: Message) => void
   updateLastMessage: (chatId: string, content: string) => void
   updateChatTitle: (chatId: string, title: string) => void
+  setAgentSessionId: (chatId: string, sessionId: string) => void
+  getAgentSessionId: (chatId: string) => string | undefined
+  addToolCall: (chatId: string, toolCall: Omit<ToolCall, 'status'>) => void
+  updateToolCallResult: (chatId: string, toolCallId: string, result: unknown) => void
+  appendToLastMessage: (chatId: string, text: string) => void
 }
 
 const generateId = () => crypto.randomUUID()
@@ -138,6 +154,72 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       chats: state.chats.map(chat =>
         chat.id === chatId ? { ...chat, title } : chat
       ),
+    }))
+  },
+
+  setAgentSessionId: (chatId, sessionId) => {
+    set(state => ({
+      chats: state.chats.map(chat =>
+        chat.id === chatId ? { ...chat, agentSessionId: sessionId } : chat
+      ),
+    }))
+  },
+
+  getAgentSessionId: (chatId) => {
+    return get().chats.find(c => c.id === chatId)?.agentSessionId
+  },
+
+  addToolCall: (chatId, toolCall) => {
+    set(state => ({
+      chats: state.chats.map(chat => {
+        if (chat.id !== chatId) return chat
+        const messages = [...chat.messages]
+        const lastMessage = messages[messages.length - 1]
+        if (lastMessage?.role === 'assistant') {
+          const existingToolCalls = lastMessage.toolCalls ?? []
+          messages[messages.length - 1] = {
+            ...lastMessage,
+            toolCalls: [...existingToolCalls, { ...toolCall, status: 'running' as const }],
+          }
+        }
+        return { ...chat, messages }
+      }),
+    }))
+  },
+
+  updateToolCallResult: (chatId, toolCallId, result) => {
+    set(state => ({
+      chats: state.chats.map(chat => {
+        if (chat.id !== chatId) return chat
+        const messages = [...chat.messages]
+        const lastMessage = messages[messages.length - 1]
+        if (lastMessage?.role === 'assistant' && lastMessage.toolCalls) {
+          messages[messages.length - 1] = {
+            ...lastMessage,
+            toolCalls: lastMessage.toolCalls.map(tc =>
+              tc.id === toolCallId ? { ...tc, result, status: 'complete' as const } : tc
+            ),
+          }
+        }
+        return { ...chat, messages }
+      }),
+    }))
+  },
+
+  appendToLastMessage: (chatId, text) => {
+    set(state => ({
+      chats: state.chats.map(chat => {
+        if (chat.id !== chatId) return chat
+        const messages = [...chat.messages]
+        const lastMessage = messages[messages.length - 1]
+        if (lastMessage?.role === 'assistant') {
+          messages[messages.length - 1] = {
+            ...lastMessage,
+            content: lastMessage.content + text,
+          }
+        }
+        return { ...chat, messages }
+      }),
     }))
   },
 }))

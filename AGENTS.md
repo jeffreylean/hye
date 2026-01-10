@@ -1,5 +1,8 @@
 # Hye - Electron Desktop Chat App
 
+## Development Guidelines
+- For UI, if you need reference. You can always refer to https://codebase.md/assistant-ui/assistant-ui to check for codebase for implementation.
+
 ## Commands
 - `bun install` - Install dependencies (runs electron-rebuild automatically)
 - `bun run dev` - Start development server

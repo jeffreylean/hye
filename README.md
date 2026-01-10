@@ -59,3 +59,4 @@ bun run build
 
 - [ ] **Chat lazy loading / pagination** - Implement infinite scroll for large chat histories. See [spec/chat-pagination.md](spec/chat-pagination.md) for details.
 - [ ] Context engineering & agent memory management
+- [ ] **Web search tool for agent** - Add web search capability. Options: Serper.dev/Tavily API (simple), DuckDuckGo scraping (complex), or Firecrawl SDK. See Firecrawl's search v2 for reference.
