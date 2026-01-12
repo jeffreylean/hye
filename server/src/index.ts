@@ -4,6 +4,7 @@ import { llmRoutes } from "./routes/llm.js";
 import { configRoutes } from "./routes/config.js";
 import { chatRoutes } from "./routes/chats.js";
 import { agentRoutes } from "./routes/agent.js";
+import { memoryRoutes } from "./routes/memory.js";
 
 const PORT = parseInt(process.env.HYE_PORT || "9876", 10);
 
@@ -18,6 +19,7 @@ const server = Bun.serve({
     ...configRoutes,
     ...chatRoutes,
     ...agentRoutes,
+    ...memoryRoutes,
   },
   fetch(req) {
     if (req.method === "OPTIONS") {

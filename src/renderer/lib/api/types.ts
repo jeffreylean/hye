@@ -65,6 +65,7 @@ export interface AgentToolResultEvent {
   id: string
   name: string
   result: unknown
+  isError?: boolean
 }
 
 export interface AgentCompleteEvent {

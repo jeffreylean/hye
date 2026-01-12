@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useRef } from 'react'
 import { getApi } from '@/lib/api'
 import { useChatStore } from '@/store/chatStore'
+import { useMemoryStore } from '@/store/memoryStore'
 
 export function useAgentSession() {
   const initializingRef = useRef<Set<string>>(new Set())
@@ -50,8 +51,8 @@ export function useAgentSession() {
     const api = getApi()
     const chatStore = useChatStore.getState()
 
-    // Add empty assistant message for streaming
-    chatStore.addMessage(chatId, { role: 'assistant', content: '' })
+    // Add empty assistant message for streaming (UI only, not persisted yet)
+    chatStore.addStreamingMessage(chatId)
 
     await api.agent.chat(sessionId, message, {
       onText: (event) => {
@@ -65,15 +66,28 @@ export function useAgentSession() {
         })
       },
       onToolResult: (event) => {
-        useChatStore.getState().updateToolCallResult(chatId, event.id, event.result)
+        useChatStore.getState().updateToolCallResult(chatId, event.id, event.result, event.isError)
+        
+        // Refresh memory tree when a memory tool completes successfully
+        if (event.name === 'memory_save' && !event.isError) {
+          useMemoryStore.getState().fetchTree()
+        }
       },
       onComplete: (event) => {
+        // Mark any still-running tools as errored
+        useChatStore.getState().markRunningToolsAsError(chatId)
         if (!event.success && event.error) {
           useChatStore.getState().appendToLastMessage(chatId, `\n\nError: ${event.error}`)
         }
+        // Persist the final message to the database
+        useChatStore.getState().finalizeStreamingMessage(chatId)
       },
       onError: (error) => {
+        // Mark any still-running tools as errored
+        useChatStore.getState().markRunningToolsAsError(chatId)
         useChatStore.getState().appendToLastMessage(chatId, `\n\nError: ${error}`)
+        // Persist the error message to the database
+        useChatStore.getState().finalizeStreamingMessage(chatId)
       },
     })
   }, [initSession])

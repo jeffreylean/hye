@@ -18,4 +18,5 @@ function getDefaultDataDir(): string {
 
 export const DATA_DIR = process.env.HYE_DATA_DIR || getDefaultDataDir()
 export const DB_PATH = join(DATA_DIR, 'hye.db')
+export const MEMORY_DB_PATH = join(DATA_DIR, 'memory.db')  // Separate DB for AgentFS
 export const CONFIG_PATH = join(DATA_DIR, 'config.json')

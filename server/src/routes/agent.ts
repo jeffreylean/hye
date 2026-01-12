@@ -59,7 +59,7 @@ async function chat(req: BunRequest): Promise<Response> {
           const result = await agent.chat(message, {
             onText: (text) => send('text', { text }),
             onToolCall: (id, name, args) => send('tool:call', { id, name, args }),
-            onToolResult: (id, name, result) => send('tool:result', { id, name, result }),
+            onToolResult: (id, name, result, isError) => send('tool:result', { id, name, result, isError }),
             onError: (error) => send('error', { error: error.message }),
           })
 

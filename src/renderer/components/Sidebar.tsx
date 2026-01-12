@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useUIStore } from '@/store/uiStore'
 import { useConfigStore } from '@/store/configStore'
 import { useChatStore } from '@/store/chatStore'
+import { useMemoryStore } from '@/store/memoryStore'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -11,23 +12,26 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { MessageSquare, Settings, Plus, Trash2 } from 'lucide-react'
+import { MessageSquare, Settings, Plus, Trash2, Brain } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function Sidebar() {
   const { currentView, setCurrentView } = useUIStore()
   const currentProvider = useConfigStore((s) => s.currentProvider)
   const { chats, currentChatId, createChat, deleteChat, setCurrentChat } = useChatStore()
+  const { isOpen: memoryOpen, toggleOpen: toggleMemory, setActiveTab } = useMemoryStore()
   const [chatToDelete, setChatToDelete] = useState<string | null>(null)
 
   const handleNewChat = () => {
     createChat()
     setCurrentView('chat')
+    setActiveTab('chat')
   }
 
   const handleSelectChat = (id: string) => {
     setCurrentChat(id)
     setCurrentView('chat')
+    setActiveTab('chat')
   }
 
   const handleDeleteClick = (e: React.MouseEvent, id: string) => {
@@ -43,7 +47,7 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="w-56 border-r bg-muted/30 flex flex-col h-full">
+    <aside className="h-full border-r bg-muted/30 flex flex-col overflow-hidden">
       <div className="p-3 border-b">
         <Button
           variant="outline"
@@ -95,6 +99,17 @@ export function Sidebar() {
       </div>
 
       <div className="mt-auto p-3 border-t flex flex-col gap-2">
+        <Button
+          variant="ghost"
+          className={cn(
+            "w-full justify-start gap-2",
+            memoryOpen && "bg-primary text-primary-foreground hover:bg-primary/90"
+          )}
+          onClick={toggleMemory}
+        >
+          <Brain className="h-4 w-4" />
+          Memory
+        </Button>
         <Button
           variant="ghost"
           className={cn(

@@ -1,4 +1,6 @@
-export type LLMProviderType = 'custom' | 'anthropic'
+export type LLMProviderType = 'custom' | 'anthropic' | 'google'
+
+export type SubagentProviderType = 'google' | 'custom'
 
 export interface LLMProviderConfig {
   type: LLMProviderType

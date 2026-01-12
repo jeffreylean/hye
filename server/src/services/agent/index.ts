@@ -12,7 +12,7 @@ export interface AgentOptions {
 export interface AgentCallbacks {
   onText?: (text: string) => void
   onToolCall?: (id: string, name: string, args: unknown) => void
-  onToolResult?: (id: string, name: string, result: unknown) => void
+  onToolResult?: (id: string, name: string, result: unknown, isError?: boolean) => void
   onError?: (error: Error) => void
 }
 
@@ -65,9 +65,12 @@ export function createAgentRunner(options: AgentOptions = {}) {
             }
             if (staticToolResults?.length) {
               for (const res of staticToolResults) {
-                callbacks.onToolResult?.(res.toolCallId, res.toolName, res.output)
+                callbacks.onToolResult?.(res.toolCallId, res.toolName, res.output, res.isError)
               }
             }
+          },
+          onError: ({ error }) => {
+            callbacks.onError?.(error instanceof Error ? error : new Error(String(error)))
           },
         })
 

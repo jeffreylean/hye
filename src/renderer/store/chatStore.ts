@@ -39,8 +39,11 @@ interface ChatState {
   setAgentSessionId: (chatId: string, sessionId: string) => void
   getAgentSessionId: (chatId: string) => string | undefined
   addToolCall: (chatId: string, toolCall: Omit<ToolCall, 'status'>) => void
-  updateToolCallResult: (chatId: string, toolCallId: string, result: unknown) => void
+  updateToolCallResult: (chatId: string, toolCallId: string, result: unknown, isError?: boolean) => void
+  markRunningToolsAsError: (chatId: string) => void
   appendToLastMessage: (chatId: string, text: string) => void
+  addStreamingMessage: (chatId: string) => void
+  finalizeStreamingMessage: (chatId: string) => void
 }
 
 const generateId = () => crypto.randomUUID()
@@ -187,7 +190,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     }))
   },
 
-  updateToolCallResult: (chatId, toolCallId, result) => {
+  updateToolCallResult: (chatId, toolCallId, result, isError) => {
     set(state => ({
       chats: state.chats.map(chat => {
         if (chat.id !== chatId) return chat
@@ -197,7 +200,30 @@ export const useChatStore = create<ChatState>()((set, get) => ({
           messages[messages.length - 1] = {
             ...lastMessage,
             toolCalls: lastMessage.toolCalls.map(tc =>
-              tc.id === toolCallId ? { ...tc, result, status: 'complete' as const } : tc
+              tc.id === toolCallId 
+                ? { ...tc, result, status: isError ? 'error' as const : 'complete' as const } 
+                : tc
+            ),
+          }
+        }
+        return { ...chat, messages }
+      }),
+    }))
+  },
+
+  markRunningToolsAsError: (chatId) => {
+    set(state => ({
+      chats: state.chats.map(chat => {
+        if (chat.id !== chatId) return chat
+        const messages = [...chat.messages]
+        const lastMessage = messages[messages.length - 1]
+        if (lastMessage?.role === 'assistant' && lastMessage.toolCalls) {
+          messages[messages.length - 1] = {
+            ...lastMessage,
+            toolCalls: lastMessage.toolCalls.map(tc =>
+              tc.status === 'running' 
+                ? { ...tc, status: 'error' as const, result: 'Tool execution failed' } 
+                : tc
             ),
           }
         }
@@ -221,5 +247,29 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         return { ...chat, messages }
       }),
     }))
+  },
+
+  // Add empty assistant message for streaming (UI only, not persisted)
+  addStreamingMessage: (chatId) => {
+    set(state => ({
+      chats: state.chats.map(chat => {
+        if (chat.id !== chatId) return chat
+        return {
+          ...chat,
+          messages: [...chat.messages, { role: 'assistant' as const, content: '' }],
+        }
+      }),
+    }))
+  },
+
+  // Persist the final assistant message to the database
+  finalizeStreamingMessage: (chatId) => {
+    const chat = get().chats.find(c => c.id === chatId)
+    if (!chat) return
+
+    const lastMessage = chat.messages[chat.messages.length - 1]
+    if (lastMessage?.role === 'assistant' && lastMessage.content) {
+      getApi().db.addMessage(chatId, 'assistant', lastMessage.content)
+    }
   },
 }))
