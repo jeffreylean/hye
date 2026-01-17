@@ -10,6 +10,7 @@ export interface ToolCall {
 }
 
 export interface Message {
+  id: string
   role: 'user' | 'assistant'
   content: string
   toolCalls?: ToolCall[]
@@ -33,7 +34,7 @@ interface ChatState {
   createChat: () => string
   deleteChat: (id: string) => void
   setCurrentChat: (id: string) => void
-  addMessage: (chatId: string, message: Message) => void
+  addMessage: (chatId: string, message: Omit<Message, 'id'> & { id?: string }) => void
   updateLastMessage: (chatId: string, content: string) => void
   updateChatTitle: (chatId: string, title: string) => void
   setAgentSessionId: (chatId: string, sessionId: string) => void
@@ -63,7 +64,14 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
   loadChats: async () => {
     const api = getApi()
-    const chats = await api.db.getAllChats()
+    const rawChats = await api.db.getAllChats()
+    const chats: Chat[] = rawChats.map(chat => ({
+      ...chat,
+      messages: chat.messages.map(msg => ({
+        ...msg,
+        id: msg.id ? String(msg.id) : generateId(),
+      })),
+    }))
     set({ 
       chats, 
       isLoaded: true,
@@ -113,12 +121,13 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   },
 
   addMessage: (chatId, message) => {
-    getApi().db.addMessage(chatId, message.role, message.content)
+    const messageWithId = { ...message, id: message.id || generateId() }
+    getApi().db.addMessage(chatId, messageWithId.role, messageWithId.content)
     
     set(state => ({
       chats: state.chats.map(chat => {
         if (chat.id !== chatId) return chat
-        const newMessages = [...chat.messages, message]
+        const newMessages = [...chat.messages, messageWithId]
         const newTitle = chat.title === 'New Chat' ? generateTitle(newMessages) : chat.title
         
         if (newTitle !== chat.title) {
@@ -256,7 +265,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         if (chat.id !== chatId) return chat
         return {
           ...chat,
-          messages: [...chat.messages, { role: 'assistant' as const, content: '' }],
+          messages: [...chat.messages, { id: generateId(), role: 'assistant' as const, content: '' }],
         }
       }),
     }))

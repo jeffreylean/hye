@@ -22,8 +22,11 @@ function App() {
   const currentView = useUIStore((s) => s.currentView)
   const loadConfig = useConfigStore((s) => s.loadConfig)
   const loadChats = useChatStore((s) => s.loadChats)
-  const { isOpen: memoryOpen, setOpen: setMemoryOpen, activeTab, setActiveTab, selectedNote } =
-    useMemoryStore()
+  const memoryOpen = useMemoryStore((s) => s.isOpen)
+  const setMemoryOpen = useMemoryStore((s) => s.setOpen)
+  const activeTab = useMemoryStore((s) => s.activeTab)
+  const setActiveTab = useMemoryStore((s) => s.setActiveTab)
+  const selectedNote = useMemoryStore((s) => s.selectedNote)
   const [memoryWidth, setMemoryWidth] = useState(280)
 
   useTheme()

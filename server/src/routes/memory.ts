@@ -3,7 +3,6 @@ import { MemoryService } from '../services/memory/MemoryService.js'
 import { jsonResponse, errorResponse, parseJsonBody } from '../lib/http.js'
 import {
   analyzeConversation,
-  categorize,
   type ConversationMessage,
   type ExtractedItem,
 } from '../services/agent/subagents/index.js'

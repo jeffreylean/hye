@@ -65,7 +65,8 @@ export function createAgentRunner(options: AgentOptions = {}) {
             }
             if (staticToolResults?.length) {
               for (const res of staticToolResults) {
-                callbacks.onToolResult?.(res.toolCallId, res.toolName, res.output, res.isError)
+                const isError = 'isError' in res ? (res as { isError?: boolean }).isError : false
+                callbacks.onToolResult?.(res.toolCallId, res.toolName, res.output, isError)
               }
             }
           },

@@ -81,12 +81,22 @@ export const MemoryService = {
     const fs = await this.getFS()
     const fullPath = `${MEMORY_ROOT}/${relativePath}`
     const dir = fullPath.substring(0, fullPath.lastIndexOf('/'))
+    
     if (dir && dir !== MEMORY_ROOT) {
-      const dirExists = await pathExists(fs, dir)
-      if (!dirExists) {
-        await fs.mkdir(dir)
+      const parts = dir.split('/').filter(Boolean)
+      let currentPath = ''
+      
+      for (const part of parts) {
+        currentPath += '/' + part
+        if (currentPath.length > MEMORY_ROOT.length) {
+          const exists = await pathExists(fs, currentPath)
+          if (!exists) {
+            await fs.mkdir(currentPath)
+          }
+        }
       }
     }
+    
     await fs.writeFile(fullPath, content)
     return fullPath
   },

@@ -23,7 +23,7 @@ export function Chat() {
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages])
+  }, [messages.length])
 
   const adjustTextareaHeight = () => {
     const textarea = textareaRef.current
@@ -117,8 +117,8 @@ export function Chat() {
       ) : (
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-            {messages.map((message, index) => (
-              <div key={index} className="flex gap-4">
+            {messages.map((message) => (
+              <div key={message.id} className="flex gap-4">
                 <div className={cn(
                   "flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center",
                   message.role === 'user' 

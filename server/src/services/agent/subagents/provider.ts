@@ -42,7 +42,6 @@ export function createSubagentModel(config: SubagentModelConfig): LanguageModel 
       const openai = createOpenAI({
         apiKey,
         baseURL: baseUrl,
-        compatibility: 'compatible',
       })
       return openai.chat(model)
     }

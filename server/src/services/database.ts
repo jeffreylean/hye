@@ -59,7 +59,7 @@ export const DatabaseService = {
     `).all() as Array<{ id: string; title: string; createdAt: number; updatedAt: number }>
 
     const getMessages = database.query(`
-      SELECT role, content
+      SELECT id, role, content
       FROM messages
       WHERE chat_id = ?
       ORDER BY created_at ASC
@@ -85,7 +85,7 @@ export const DatabaseService = {
     if (!chat) return null
 
     const messages = database.query(`
-      SELECT role, content
+      SELECT id, role, content
       FROM messages
       WHERE chat_id = ?
       ORDER BY created_at ASC

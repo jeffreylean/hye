@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useUIStore } from '@/store/uiStore'
 import { useConfigStore } from '@/store/configStore'
 import { useChatStore } from '@/store/chatStore'
@@ -16,35 +16,42 @@ import { MessageSquare, Settings, Plus, Trash2, Brain } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function Sidebar() {
-  const { currentView, setCurrentView } = useUIStore()
+  const currentView = useUIStore((s) => s.currentView)
+  const setCurrentView = useUIStore((s) => s.setCurrentView)
   const currentProvider = useConfigStore((s) => s.currentProvider)
-  const { chats, currentChatId, createChat, deleteChat, setCurrentChat } = useChatStore()
-  const { isOpen: memoryOpen, toggleOpen: toggleMemory, setActiveTab } = useMemoryStore()
+  const chats = useChatStore((s) => s.chats)
+  const currentChatId = useChatStore((s) => s.currentChatId)
+  const createChat = useChatStore((s) => s.createChat)
+  const deleteChat = useChatStore((s) => s.deleteChat)
+  const setCurrentChat = useChatStore((s) => s.setCurrentChat)
+  const memoryOpen = useMemoryStore((s) => s.isOpen)
+  const toggleMemory = useMemoryStore((s) => s.toggleOpen)
+  const setActiveTab = useMemoryStore((s) => s.setActiveTab)
   const [chatToDelete, setChatToDelete] = useState<string | null>(null)
 
-  const handleNewChat = () => {
+  const handleNewChat = useCallback(() => {
     createChat()
     setCurrentView('chat')
     setActiveTab('chat')
-  }
+  }, [createChat, setCurrentView, setActiveTab])
 
-  const handleSelectChat = (id: string) => {
+  const handleSelectChat = useCallback((id: string) => {
     setCurrentChat(id)
     setCurrentView('chat')
     setActiveTab('chat')
-  }
+  }, [setCurrentChat, setCurrentView, setActiveTab])
 
-  const handleDeleteClick = (e: React.MouseEvent, id: string) => {
+  const handleDeleteClick = useCallback((e: React.MouseEvent, id: string) => {
     e.stopPropagation()
     setChatToDelete(id)
-  }
+  }, [])
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = useCallback(() => {
     if (chatToDelete) {
       deleteChat(chatToDelete)
       setChatToDelete(null)
     }
-  }
+  }, [chatToDelete, deleteChat])
 
   return (
     <aside className="h-full border-r bg-muted/30 flex flex-col overflow-hidden">

@@ -1,6 +1,7 @@
 import type { AppConfig, LLMProviderConfig } from '../../../shared/types'
 
 export interface Message {
+  id?: number | string
   role: 'user' | 'assistant'
   content: string
 }

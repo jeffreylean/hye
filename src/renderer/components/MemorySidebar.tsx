@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, memo } from 'react'
 import { useMemoryStore, type MemoryTreeEntry } from '@/store/memoryStore'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
@@ -15,11 +15,20 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-function TreeNode({ entry, depth = 0 }: { entry: MemoryTreeEntry; depth?: number }) {
+const TreeNode = memo(function TreeNode({ entry, depth = 0 }: { entry: MemoryTreeEntry; depth?: number }) {
   const [isExpanded, setIsExpanded] = useState(true)
-  const { fetchNote, selectedNote } = useMemoryStore()
+  const fetchNote = useMemoryStore((s) => s.fetchNote)
+  const selectedFilepath = useMemoryStore((s) => s.selectedNote?.filepath)
 
-  const isSelected = selectedNote?.filepath === entry.path
+  const isSelected = selectedFilepath === entry.path
+
+  const handleToggle = useCallback(() => {
+    setIsExpanded((prev) => !prev)
+  }, [])
+
+  const handleSelect = useCallback(() => {
+    fetchNote(entry.path)
+  }, [fetchNote, entry.path])
 
   if (entry.type === 'directory') {
     return (
@@ -30,7 +39,7 @@ function TreeNode({ entry, depth = 0 }: { entry: MemoryTreeEntry; depth?: number
             'text-left'
           )}
           style={{ paddingLeft: `${depth * 12 + 8}px` }}
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={handleToggle}
         >
           {isExpanded ? (
             <ChevronDown className="h-3 w-3 text-muted-foreground" />
@@ -59,13 +68,13 @@ function TreeNode({ entry, depth = 0 }: { entry: MemoryTreeEntry; depth?: number
         isSelected && 'bg-primary text-primary-foreground hover:bg-primary/90'
       )}
       style={{ paddingLeft: `${depth * 12 + 20}px` }}
-      onClick={() => fetchNote(entry.path)}
+      onClick={handleSelect}
     >
       <FileText className="h-4 w-4 flex-shrink-0" />
       <span className="truncate">{entry.name.replace('.md', '')}</span>
     </button>
   )
-}
+})
 
 
 
